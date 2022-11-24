@@ -1,6 +1,7 @@
 from plyer import notification
 from pygame import mixer
 import requests
+import logging
 import time
 import json
 import random
@@ -8,17 +9,18 @@ import emoji
 import re
 import os
 
-authToken = {"authorization": "Your discord token"}																				# <--- Change
-responses = ["List", "of", "messages", "that", "will", "respond", "to", "a", "ping"]											# <--- Change
+authToken = {"authorization": "Your discord token"}																														# <--- Change
+responses = ["List", "of", "messages", "that", "will", "respond", "to", "a", "ping"]																					# <--- Change
 win, alert, notWorking, sus, nameMentioned = "win.wav", "alert.wav", "notworking.wav", "sus.wav", "namementioned.wav"
-userID, channelID = "Your Discord ID", "The channel ID to guess the number"														# <--- Change
-botID, botDMID = "ID of the bot that is sending the messages", "If the bot DMs you and you have to reply with a message"		# <--- Change
+userID, channelID, generalChannelID = "Your Discord ID", "The channel ID to guess the number", "The general channel ID of the server to check and respond pings"		# <--- Change
+botID, botDMID = "ID of the bot that is sending the messages", "If the bot DMs you and you have to reply with a message"												# <--- Change
 numberList, randomNumbers = [], []
 restart, requestContinue = True, False
 startNumber = endNumber = runs = 0
 textFileName = "numbers.txt"
 loadMessageLimit = 100
 mixer.init()
+
 
 def notify(message):
 	notification.notify(
@@ -30,10 +32,17 @@ def notify(message):
 
 
 def notificationBanner(warningMessage, soundFile, message):
-	print(warningMessage, "\n")
+	print("\n" + warningMessage, "\n")
 	notify(message)
 	mixer.music.load(os.path.dirname(__file__) + f"\\{soundFile}")
 	mixer.music.play()
+
+
+def log(message):
+	logging.getLogger("requests").setLevel(logging.WARNING)
+	logging.getLogger("urllib3").setLevel(logging.WARNING)
+	logging.basicConfig(level=logging.DEBUG, filename=os.path.dirname(__file__) + "\\numbers.log", filemode="a+", format="[%(asctime)s] [%(levelname)s]: %(message)s", datefmt="%A, %B %d, %Y %I:%M:%S %p")
+	logging.info(message)
 
 
 def yesNo(text):
@@ -70,13 +79,14 @@ def intInput(text, int1, int2):
 			print("\nEnter a number between (", int1, " - ", int2, ") or -1 to Restart\n", sep="")
 
 
-def pause():
-	print("Paused Program...\n")
+def pause(numbers):
+	print("\nPaused Program...\n")
 	next = input("Type \"1\" to continue / Type a key to exit\n")
 	print()
 	
 	if next == '1':
 		print("Resuming Program...\n")
+		log(numbers)
 		return 1
 
 	else:
@@ -105,50 +115,50 @@ def request(option, ID, message, messageID, reaction):
 		except:
 			pass
 		
-		if not offline: print("You are offline...\n")
+		if not offline: print("\nYou are offline...\n")
 		offline = True
 
 
 def detectMessages():
 	messageInfo = request("get", channelID, None, None, None)
-	generalChannel = request("get", "The general channel ID of the server to check for pings", None, None, None)			# <--- Change
+	generalChannel = request("get", generalChannelID, None, None, None)																									# <--- Change
 	ping = win = ignore = noBotResponse = warning = 0
 
 	while ping < 10:
 		randomInt = random.randint(0, len(responses) - 1)
 
 		if (f'<@{userID}>' in messageInfo[ping]['content'] or f'{userID}' in ''.join(str(text) for text in messageInfo[ping]['mentions'])):
-			text = "The message if you have been pinged by someone"															# <--- Change
+			text = "The message if you have been pinged by someone"																										# <--- Change
 			notificationBanner(text, alert, text)
 			time.sleep(3)
 			request("post", channelID, responses[randomInt], None, None)
 			return 0
 
 		if (f'<@{userID}>' in generalChannel[ping]['content']):
-			text = "The message if you have been pinged by someone"															# <--- Change
+			text = "The message if you have been pinged by someone"																										# <--- Change
 			notificationBanner(text, alert, text)
 			time.sleep(3)
-			request("post", "The general channel ID of the server to respond a ping", responses[randomInt], None, None)		# <--- Change
+			request("post", generalChannelID, responses[randomInt], None, None)																							# <--- Change
 			return 0 
 
 		ping += 1
 	
 	while win < 8:
-		if ("Winning message of the Bot" in messageInfo[win]['content'] and f"{botID}" in str(messageInfo[win]['author'])):	# <--- Change
+		if ("Winning message of the Bot" in messageInfo[win]['content'] and f"{botID}" in str(messageInfo[win]['author'])):												# <--- Change
 			messageInfoDM = request("get", f"{botDMID}", None, None, None)
 
-			if ("Bot message when they DM you that you won the game" in messageInfoDM[0]['content']):						# <--- Change
-				request("post", f"{botDMID}", "Responding message to the bot DM", None, None)								# <--- Change
+			if ("Bot message when they DM you that you won the game" in messageInfoDM[0]['content']):																	# <--- Change
+				request("post", f"{botDMID}", "Responding message to the bot DM", None, None)																			# <--- Change
 
-			elif ("Alternative message of the bot when it DMs you" in messageInfoDM[0]['content']):							# <--- Change
-				request("post", f"{botDMID}", "Responding message to the bot DM", None, None)								# <--- Change
+			elif ("Alternative message of the bot when it DMs you" in messageInfoDM[0]['content']):																		# <--- Change
+				request("post", f"{botDMID}", "Responding message to the bot DM", None, None)																			# <--- Change
 
 			return 1
 
 		win += 1
 
 	while ignore < 7:
-		if not ("Message to check that is constantly sent by the bot when it is functioning" in messageInfo[ignore]['content']):				# <--- Change
+		if not ("Message to check that is constantly sent by the bot when it is functioning" in messageInfo[ignore]['content']):										# <--- Change
 			noBotResponse += 1
 
 		ignore += 1
@@ -162,16 +172,16 @@ def detectMessages():
 		if ("bot" in messageInfo[warning]['content'] or "hack" in messageInfo[warning]['content'] or "auto" in messageInfo[warning]['content']):
 			return 3
 
-		if ("Short version of your Discord Username" in messageInfo[warning]['content']):									# <--- Change
+		if ("Short version of your Discord Username" in messageInfo[warning]['content']):																				# <--- Change
 			return 4
 
-		if ("timestampflagscomponentsreactions" in pause):
+		if ("timestampflagscomponentsreactions" in pause and f"{userID}" in str(messageInfo[warning]['author'])):
 			return 5
 		
 		warning += 1
 
 
-def reviewMessages(usedNumbersList, allNumbersList, messageAmount):
+def reviewMessages(usedNumbersList, allNumbersList, messageAmount, number):
 	messagesInfo = request("get", channelID, None, None, None)
 	messageCounter = 0
 	
@@ -196,17 +206,23 @@ def reviewMessages(usedNumbersList, allNumbersList, messageAmount):
 		try:
 			usedNumbersList.append(selectedNumber)
 			usedNumbersList = [*set(usedNumbersList)]
+
+			if (not __name__ == "__main__" and messageCounter == 1 and not number == int(''.join(messagesInfo[messageCounter]['content']))):
+				number = int(''.join(messagesInfo[messageCounter]['content']))
+				print("Removed", str(number))
+
 			allNumbersList.remove(selectedNumber)
 
 		except ValueError: pass
 		messageCounter += 1
 
-	return usedNumbersList, allNumbersList
+	return usedNumbersList, allNumbersList, number
 
 
 def processCount(allNumbers):
 	success = False
 	usedNumbers = []
+	dummyNumber = None
 	
 	with open(os.path.dirname(__file__) + f"\\{textFileName}") as readFile: numbers = readFile.read()
 	usedNumbers = [int(number) for number in (numbers.strip("[]")).split(', ') if number.isdigit()]
@@ -216,10 +232,10 @@ def processCount(allNumbers):
 			open(os.path.dirname(__file__) + f"\\{textFileName}", "w").close()
 			usedNumbers = []
 
-	usedNumbers, allNumbers = reviewMessages(usedNumbers, allNumbers, 1000)
+	usedNumbers, allNumbers, dummyNumber = reviewMessages(usedNumbers, allNumbers, 1000, dummyNumber)
 
 	while (0 < len(allNumbers) - 1):
-		usedNumbers, allNumbers = reviewMessages(usedNumbers, allNumbers, 20)
+		usedNumbers, allNumbers, dummyNumber = reviewMessages(usedNumbers, allNumbers, 20, dummyNumber)
 		with open(os.path.dirname(__file__) + f"\\{textFileName}", "w") as file: file.write(str(usedNumbers))
 
 		for usedNumber in usedNumbers:
@@ -231,7 +247,7 @@ def processCount(allNumbers):
 			
 
 		if (success and not allNumbers):
-			notify("Message when the bot finishes counting")																# <--- Change
+			notify("Message when the bot finishes counting")																											# <--- Change
 			break
 
 		elif (not allNumbers):
@@ -240,29 +256,33 @@ def processCount(allNumbers):
 
 		request("post", channelID, allNumbers[0], None, None)
 
+		numbersLeft = "There are " + str(len(allNumbers)) + " numbers left"
+		if len(allNumbers) == 1: numbersLeft = "There is 1 number left"
+		print(numbersLeft); log(numbersLeft)
+
 		success = True
 		time.sleep(7)
 
 		if (detectMessages() == 0): break
 		
 		if (detectMessages() == 1):
-			text = "Message when someone has found the number"																# <--- Change
+			text = "Message when someone has found the number"																											# <--- Change
 			notificationBanner(text, win, text)
 			open(os.path.dirname(__file__) + f"\\{textFileName}", "w").close()
 			usedNumbers = allNumbers = []
 			return 1
 		
 		if (detectMessages() == 2):
-			text = "Message when the bot isn't functioning"																	# <--- Change
+			text = "Message when the bot isn't functioning"																												# <--- Change
 			notificationBanner(text, notWorking, text)
 			break
 
 		if (detectMessages() == 3):
-			text = "Message when someone says the word hack, auto, or bot"													# <--- Change
+			text = "Message when someone says the word hack, auto, or bot"																								# <--- Change
 			notificationBanner(text, sus, text)
 
 		if (detectMessages() == 4):
-			text = "Message when someone mentions your Discord Username but doesn't ping you"								# <--- Change							
+			text = "Message when someone mentions your Discord Username but doesn't ping you"																			# <--- Change							
 			notificationBanner(text, nameMentioned, text)
 
 		if (detectMessages() == 5):
@@ -274,123 +294,127 @@ def processCount(allNumbers):
 				request("delete", channelID, None, messageID, reaction)
 				counter += 1
 
-			if pause() == 0: break
+			if pause(allNumbers) == 0: break
 		
 		time.sleep(3)
-		if len(allNumbers) == 1: notify("Message when the bot finishes counting")											# <--- Change
+		if len(allNumbers) == 1:
+			notify("Message when the bot finishes counting")																											# <--- Change
+			print()
 
 
 class runProgram():
-	try:
-		with open(os.path.dirname(__file__) + f"\\{textFileName}", "x") as file: file.write("")
-	
-	except: pass
+	if __name__ == "__main__":
+		try:
+			with open(os.path.dirname(__file__) + f"\\{textFileName}", "x") as file: file.write("")
+		
+		except: pass
 
-	while restart:
-		randomNumber = yesNo("Random Numbers? (Y / N): ")
-		requestContinue = breakLoop = False
+		while restart:
+			randomNumber = yesNo("Random Numbers? (Y / N): ")
+			requestContinue = breakLoop = False
 
-		if randomNumber:
-			if (0 < len(randomNumbers) - 1 and not (runs == 0)):
-				requestContinue = yesNo("Do you want to continue from previous list? (Y / N): ")
+			if randomNumber:
+				if (0 < len(randomNumbers) - 1 and not (runs == 0)):
+					requestContinue = yesNo("Do you want to continue from previous list? (Y / N): ")
 
-				if randomNumber:
-					smallNumber = 0
-					bigNumber = 500
+					if randomNumber:
+						smallNumber = 0
+						bigNumber = 500
 
-			if not requestContinue:
-				while True:
-					smallNumber = intInput("Small Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")													# <--- Change
-
-					if smallNumber == -1:
-						breakLoop = True
-						break
-
-					bigNumber = intInput("Big Number (Low Number + 1 - High Number) or -1 to Restart [Must be bigger than the small number]: ", "Low Number + 1", "High Number")		# <--- Change
-
-					if bigNumber == -1:
-						breakLoop = True
-						break
-
-					print()
-
-					if smallNumber > bigNumber:
-						print("The small number must be smaller than the big number\n")
-						continue
-
-					break
-
-				if breakLoop:
-					continue
-
-			if smallNumber < bigNumber:
 				if not requestContinue:
-					randomNumbers = list(range(smallNumber, bigNumber + 1))
-					random.shuffle(randomNumbers)
-				
-				randomNumberList = ", ".join(str(number) for number in randomNumbers)
-				print("Random Number List: [" + randomNumberList + "]\n")
+					while True:
+						smallNumber = intInput("Small Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")													# <--- Change
 
-				if processCount(randomNumbers) == 1: randomNumbers, numberList = [], []
+						if smallNumber == -1:
+							breakLoop = True
+							break
 
-		else:
-			if (0 < len(numberList) - 1 and not (runs == 0)):
-				requestContinue = yesNo("Do you want to continue from previous list? (Y / N): ")
+						bigNumber = intInput("Big Number (Low Number + 1 - High Number) or -1 to Restart [Must be bigger than the small number]: ", "Low Number + 1", "High Number")		# <--- Change
 
-				if requestContinue:
-					startNumber = 0
-					endNumber = 500
-					stepCount = 1
-			
-			if not requestContinue:
-				while True:
-					startNumber = intInput("Starting Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")			# <--- Change
+						if bigNumber == -1:
+							breakLoop = True
+							break
 
-					if startNumber == -1:
-						breakLoop = True
+						print()
+
+						if smallNumber > bigNumber:
+							print("The small number must be smaller than the big number\n")
+							continue
+
 						break
 
-					endNumber = intInput("Ending Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")				# <--- Change
-
-					if endNumber == -1:
-						breakLoop = True
-						break
-					
-					stepCount = intInput("Step Count (Low Number + 1 - High Number) or -1 to Restart: ", "Low Number + 1", "High Number")			# <--- Change
-
-					if stepCount == -1:
-						breakLoop = True
-						break
-
-					print()
-
-					if (startNumber == endNumber):
-						print("The starting number cannot equal the ending number\n")
+					if breakLoop:
 						continue
+
+				if smallNumber < bigNumber:
+					if not requestContinue:
+						randomNumbers = list(range(smallNumber, bigNumber + 1))
+						random.shuffle(randomNumbers)
 					
-					numberList = []
-					break
+					randomNumberList = "Random Number List: [" + ", ".join(str(number) for number in randomNumbers) + "]\n"
+					print(randomNumberList); log(randomNumberList)
 
-				if breakLoop:
-					continue
+					if processCount(randomNumbers) == 1: randomNumbers, numberList = [], []
 
-			count = startNumber
+			else:
+				if (0 < len(numberList) - 1 and not (runs == 0)):
+					requestContinue = yesNo("Do you want to continue from previous list? (Y / N): ")
 
-			if startNumber < endNumber:
-				while (count <= endNumber and not requestContinue):
-					numberList.append(count)
-					count += stepCount
+					if requestContinue:
+						startNumber = 0
+						endNumber = 500
+						stepCount = 1
+				
+				if not requestContinue:
+					while True:
+						startNumber = intInput("Starting Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")								# <--- Change
 
-			elif startNumber > endNumber:
-				while (count >= endNumber and not requestContinue):
-					numberList.append(count)
-					count -= stepCount		
-					
-			numbersList = ", ".join(str(number) for number in numberList)
-			print("Number List: [" + numbersList + "]\n")
+						if startNumber == -1:
+							breakLoop = True
+							break
 
-			if processCount(numberList) == 1: numberList, randomNumbers = [], []
+						endNumber = intInput("Ending Number (Low Number - High Number) or -1 to Restart: ", "Low Number", "High Number")									# <--- Change
 
-		restart = yesNo("Restart? (Y / N): ")
-		mixer.music.stop()
-		runs += 1
+						if endNumber == -1:
+							breakLoop = True
+							break
+						
+						stepCount = intInput("Step Count (Low Number + 1 - High Number) or -1 to Restart: ", "Low Number + 1", "High Number")								# <--- Change
+
+						if stepCount == -1:
+							breakLoop = True
+							break
+
+						print()
+
+						if (startNumber == endNumber):
+							print("The starting number cannot equal the ending number\n")
+							continue
+						
+						numberList = []
+						break
+
+					if breakLoop:
+						continue
+
+				count = startNumber
+
+				if startNumber < endNumber:
+					while (count <= endNumber and not requestContinue):
+						numberList.append(count)
+						count += stepCount
+
+				elif startNumber > endNumber:
+					while (count >= endNumber and not requestContinue):
+						numberList.append(count)
+						count -= stepCount		
+						
+				numbersList = ", ".join(str(number) for number in numberList)
+				numberList = "Number List: [" + ", ".join(str(number) for number in numberList) + "]\n"
+				print(numberList); log(numberList)
+
+				if processCount(numberList) == 1: numberList, randomNumbers = [], []
+
+			restart = yesNo("Restart? (Y / N): ")
+			mixer.music.stop()
+			runs += 1
