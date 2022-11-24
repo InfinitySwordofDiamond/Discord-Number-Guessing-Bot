@@ -10,3 +10,5 @@ The bot can detect up to:
   6 messages for reactions, suspicious messages, or name mentioned without ping
   
 To pause to program when the count is proccessing, react to a recent message
+
+Use detectnumbers.py to detect the numbers of other users while the count.py script isn't running or is paused
