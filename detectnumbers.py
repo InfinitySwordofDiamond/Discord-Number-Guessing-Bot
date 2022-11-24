@@ -13,7 +13,9 @@ def checkMessages():
 
     while count < 4:
         if ("Winning Message" in messageInfo[count]['content'] and f"{botID}" in str(messageInfo[count]['author'])):                    # <--- Change
-            return 1
+            return True
+        
+        count += 1
 
 removedNumber = None
 
@@ -26,8 +28,8 @@ while True:
     numbersUsed, dummyList, removedNumber = reviewMessages(numbersUsed, dummyList, 100, removedNumber)
     with open(os.path.dirname(__file__) + f"\\{textFileName}", "w") as file: file.write(str(numbersUsed))
 
-    if (checkMessages() == 1):
+    if checkMessages():
         open(os.path.dirname(__file__) + f"\\{textFileName}", "w").close()
-        print("\nThe number has been found so " + textFileName + "has been cleared\n")
+        print("\nThe number has been found so \"" + textFileName + "\" has been cleared\n")
         numbersUsed = []
         time.sleep(20)
