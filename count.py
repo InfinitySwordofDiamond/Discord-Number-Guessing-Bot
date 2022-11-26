@@ -115,7 +115,7 @@ def request(option, ID, message, messageID, reaction):
 		except:
 			pass
 		
-		if not offline: print("\nYou are offline...\n")
+		if not offline: print("You are offline...\n")
 		offline = True
 
 
@@ -175,7 +175,7 @@ def detectMessages():
 		if ("Short version of your Discord Username" in messageInfo[warning]['content']):																				# <--- Change
 			return 4
 
-		if ("timestampflagscomponentsreactions" in pause and f"{userID}" in str(messageInfo[warning]['author'])):
+		if ("timestampflagscomponentsreactions" in pause and "'me': True" in str(messageInfo[warning]['reactions'])):
 			return 5
 		
 		warning += 1
@@ -256,8 +256,8 @@ def processCount(allNumbers):
 
 		request("post", channelID, allNumbers[0], None, None)
 
-		numbersLeft = "There are " + str(len(allNumbers)) + " numbers left"
-		if len(allNumbers) == 1: numbersLeft = "There is 1 number left"
+		numbersLeft = "There are " + str(len(allNumbers)) + " numbers left\n"
+		if len(allNumbers) == 1: numbersLeft = "There is 1 number left\n"
 		print(numbersLeft); log(numbersLeft)
 
 		success = True
