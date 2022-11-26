@@ -409,9 +409,8 @@ class runProgram():
 						numberList.append(count)
 						count -= stepCount		
 						
-				numbersList = ", ".join(str(number) for number in numberList)
-				numberList = "Number List: [" + ", ".join(str(number) for number in numberList) + "]\n"
-				print(numberList); log(numberList)
+				numbersList = "Number List: [" + ", ".join(str(number) for number in numberList) + "]\n"
+				print(numbersList); log(numbersList)
 
 				if processCount(numberList) == 1: numberList, randomNumbers = [], []
 
